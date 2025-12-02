@@ -1,9 +1,5 @@
 import re
 
-from flask import Blueprint, render_template, request, url_for
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql import not_
-
 from CTFd.cache import cache
 from CTFd.models import Challenges, Tracking, Users, UserTokens, db
 from CTFd.plugins.emailnotifications.forms import forms
@@ -23,6 +19,9 @@ from CTFd.utils.email import sendmail
 from CTFd.utils.helpers import get_errors, get_infos, markup
 from CTFd.utils.modes import TEAMS_MODE
 from CTFd.utils.user import get_current_team, get_current_user
+from flask import Blueprint, render_template, request, url_for
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import not_
 
 
 class UserNotifs(db.Model):
@@ -128,18 +127,6 @@ def load(app):
             db.session.rollback()
             checks = []
 
-    @app.route("/admin/emailNotifs/config/<configType>", methods=["GET", "POST"])
-    @admins_only
-    def toggle_notifs(configType):
-        key = configType
-
-        newstate = toggle_config(key)
-        data = "disabled"
-        if newstate:
-            data = "enabled"
-
-        return {"success": True, "data": data, "id": key}
-
     @app.route("/admin/NotificationForwarding")
     @admins_only
     def notif_config():
@@ -204,7 +191,7 @@ def load(app):
     # put every new user in table
     @check_registration_visibility
     @ratelimit(method="POST", limit=10, interval=5)
-    def notif_register():
+    def notif_register(res):
         # add user checkmark for email notifications
         if get_current_user():
             check = UserNotifs(get_current_user(), False)
@@ -414,5 +401,5 @@ def load(app):
             q=q,
             field=field,
         ))
-
+    
     run_after_route(app, "admin.users_listing", modify_users)
