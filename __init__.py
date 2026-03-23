@@ -1,5 +1,9 @@
 import re
 
+from flask import Blueprint, render_template, request, url_for
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import not_
+
 from CTFd.cache import cache
 from CTFd.models import Challenges, Tracking, Users, UserTokens, db
 from CTFd.plugins.emailnotifications.forms import forms
@@ -17,11 +21,9 @@ from CTFd.utils.decorators import admins_only, authed_only, ratelimit
 from CTFd.utils.decorators.visibility import check_registration_visibility
 from CTFd.utils.email import sendmail
 from CTFd.utils.helpers import get_errors, get_infos, markup
+from CTFd.utils.logging import log
 from CTFd.utils.modes import TEAMS_MODE
 from CTFd.utils.user import get_current_team, get_current_user
-from flask import Blueprint, render_template, request, url_for
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql import not_
 
 
 class UserNotifs(db.Model):
@@ -179,9 +181,10 @@ def load(app):
 
     @admins_only
     def notification_post(response):
-        if request.method == "GET" and response[0].get_json():
+        if request.method == "POST" and response[0].get_json():
             email = get_config("sendEmailNotif")
             if email:
+                log('registrations',format="####################### {data}",data = response[0].get_json()['data'])
                 send_mail_all_users(response[0].get_json()["data"])
             elif email is None:
                 set_config("sendEmailNotif", "false")
